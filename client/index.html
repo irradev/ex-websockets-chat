@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB SOCKET FRONTEND</title>
+</head>
+<body>
+    <h1>WEB SOCKET - NATIVO</h1>
+    <small>STATUS: <span id="status"></span></small>
+    <br/>
+    <br/>
+    <form>
+        <input type="text" name="message" placeholder="Enviar mensaje" />
+        <button type="submit">Enviar</button>
+    </form>
+
+    <ul id="messages">
+
+    </ul>
+
+    <script>
+        const form = document.querySelector('form');
+        const input = document.querySelector('input');
+        const messageElement = document.getElementById('messages');
+        const statusElement = document.getElementById('status');
+
+        const GUEST = 'Guest' + Math.floor(Math.random() * 1000);
+        let socket = null;
+
+        function sendMessage(message, socket) {
+            if (!message.trim()) return;
+            // socket.send(JSON.stringify({user: GUEST, message}));
+            socket.send(`${GUEST} ${message}`);
+            renderMessage(`me: ${message}`);
+        }
+        function renderMessage(message) {
+            const li = document.createElement('li');
+            li.textContent = message;
+            messageElement.appendChild(li);
+        }
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const message = input.value;
+            sendMessage(message, socket);
+            input.value = '';
+        });
+
+        function connectToServer() {
+            socket = new WebSocket('ws://localhost:3000');
+
+            socket.onopen =() => {
+                statusElement.textContent = 'ONLINE';
+            };
+    
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                renderMessage(data.payload);
+            };
+    
+            socket.onclose = (event) => {
+                statusElement.textContent = 'OFFLINE';
+
+                // Se crea este timeout de reconexión para evitar
+                // que todos los clientes se conecten al mismo tiempo
+                // y bombardeen la red en caso de que sean muchos.
+                setTimeout(connectToServer, 1000 + Math.floor(Math.random() * 1500));
+            };
+        }
+
+        connectToServer();
+
+
+        
+
+    </script>
+</body>
+</html>
